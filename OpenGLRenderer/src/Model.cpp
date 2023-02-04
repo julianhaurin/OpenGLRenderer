@@ -77,11 +77,11 @@ void Model::LoadModel(const char* in_filePath) {
 				//}
 
 				// texture coordinates
-				//if (index.texcoord_index >= 0) {
-				//	std::cout << "Loading texture data... " << std::endl;
-				//	m_vertexData.push_back(attrib.texcoords[2 * size_t(index.texcoord_index) + 0]);
-				//	m_vertexData.push_back(attrib.texcoords[2 * size_t(index.texcoord_index) + 1]);
-				//}
+				if (index.texcoord_index >= 0) {
+					// std::cout << "Loading texture data... " << std::endl;
+					m_vertexData.push_back(attrib.texcoords[2 * index.texcoord_index + 0]);
+					m_vertexData.push_back(attrib.texcoords[2 * index.texcoord_index + 1]);
+				}
 
 			}
 

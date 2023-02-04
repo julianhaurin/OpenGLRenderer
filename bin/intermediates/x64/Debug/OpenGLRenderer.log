@@ -1,12 +1,9 @@
 ﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(517,5): warning MSB8028: The intermediate directory (C:\Code\Cpp\OpenGLRenderer\bin\intermediates\x64\Debug\) contains files shared from another project (ChernoOpenGL.vcxproj, OpenGLTutorial.vcxproj).  This can lead to incorrect clean and rebuild behavior.
-  Model.cpp
-C:\Code\Cpp\OpenGLRenderer\OpenGLRenderer\src\Model.cpp(89,40): warning C4834: discarding return value of function with 'nodiscard' attribute
   main.cpp
-C:\Code\Cpp\OpenGLRenderer\OpenGLRenderer\src\main.cpp(171,28): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\Code\Cpp\OpenGLRenderer\OpenGLRenderer\src\main.cpp(335,22): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Code\Cpp\OpenGLRenderer\OpenGLRenderer\src\main.cpp(336,22): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Code\Cpp\OpenGLRenderer\OpenGLRenderer\src\main.cpp(342,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\Code\Cpp\OpenGLRenderer\OpenGLRenderer\src\main.cpp(345,18): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Code\Cpp\OpenGLRenderer\OpenGLRenderer\src\main.cpp(346,18): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-  Generating Code...
+C:\Code\Cpp\OpenGLRenderer\OpenGLRenderer\src\main.cpp(174,28): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Code\Cpp\OpenGLRenderer\OpenGLRenderer\src\main.cpp(338,22): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Code\Cpp\OpenGLRenderer\OpenGLRenderer\src\main.cpp(339,22): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Code\Cpp\OpenGLRenderer\OpenGLRenderer\src\main.cpp(345,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Code\Cpp\OpenGLRenderer\OpenGLRenderer\src\main.cpp(348,18): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Code\Cpp\OpenGLRenderer\OpenGLRenderer\src\main.cpp(349,18): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
   OpenGLRenderer.vcxproj -> C:\Code\Cpp\OpenGLRenderer\bin\x64\Debug\OpenGLRenderer.exe

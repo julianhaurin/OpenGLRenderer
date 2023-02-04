@@ -6,7 +6,7 @@
 #include <stb_image.h> // image loading library
 
 // loads texture data into provided texture ID(?)
-int loadTexture(unsigned int& in_texture) {
+int loadTexture(unsigned int& in_texture, const char* in_filePath) {
 
     // texture1
     glGenTextures(1, &in_texture);
@@ -27,7 +27,7 @@ int loadTexture(unsigned int& in_texture) {
     // load image from disk using stbi
     stbi_set_flip_vertically_on_load(true);
     int width, height, nrChannels;
-    unsigned char* textureData = stbi_load("./assets/textures/drunkCat.jpg", &width, &height, &nrChannels, 0);
+    unsigned char* textureData = stbi_load(in_filePath, &width, &height, &nrChannels, 0);
 
     // checks that the image loaded successfully
     if (!textureData) {

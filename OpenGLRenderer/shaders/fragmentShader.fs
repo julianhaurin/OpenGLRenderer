@@ -5,7 +5,7 @@
  
 // input data
 in vec3 color_outV; // from vertex shader, same name and type
-// in vec2 texCoord_outV;
+in vec2 texCoord_outV;
  
 // output data
 out vec4 FragColor;
@@ -19,6 +19,6 @@ void main()
 {
 
   // multiplying texture and color to combine                    
-  FragColor = vec4(color_outV, 1.0f); // * texture(texture1, texCoord_outV);
+  FragColor = vec4(color_outV, 1.0f) * texture(texture1, texCoord_outV);
  
 }

@@ -7,4 +7,4 @@
 #include <GL/glew.h>
 
 // loads texture data into provided texture ID(?)
-int loadTexture(unsigned int& in_textureData);
+int loadTexture(unsigned int& in_textureData, const char* in_filePath);

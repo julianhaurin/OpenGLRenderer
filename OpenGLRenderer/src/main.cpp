@@ -56,9 +56,12 @@ glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f); // positive z-axis is through
 Camera camera = Camera(cameraPos, worldUp);
 
 // file paths
-const char MODEL_PATH[] = "./assets/models/monkey.obj";
 const char VERTEX_SHADER_PATH[] = "./shaders/vertexShader.vs";
 const char FRAGMENT_SHADER_PATH[] = "./shaders/fragmentShader.fs";
+
+const char MODEL_PATH[] = "./assets/models/capybara7.obj";
+const char TEXTURE_PATH[] = "./assets/textures/drunkCat.jpg.obj";
+// const char TEXTURE_PATH[] = "./assets/textures/capybara7.mtl";
 
 // initial mouse positions
 float lastMouseX = 400;
@@ -130,16 +133,16 @@ int main() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertexDataArr), vertexDataArr, GL_STATIC_DRAW); // copies vertex data into buffer's memory
 
     // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
     // color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     // texture coord attribute
-    // glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    // glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     // configuring EBO
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
@@ -149,14 +152,14 @@ int main() {
     // Textures // --------------------------------------------------------------------------------------------------------------
  
     // generating textures
-    unsigned int texture1;
+    unsigned int texture;
 
-    if (loadTexture(texture1) != 0) {
+    if (loadTexture(texture, TEXTURE_PATH) != 0) {
         std::cout << "ERROR: failed to load texture data with loadTexture() " << std::endl;
     }
 
     shaderProgram.use();
-    shaderProgram.setInt("texture2", 1); // sets texture ID data(?) using Shader class
+    shaderProgram.setInt("texture", 0); // sets texture ID data(?) using Shader class
     
     glEnable(GL_DEPTH_TEST);
 
@@ -183,7 +186,7 @@ int main() {
 
         // bind textures on corresponding texture units
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1);
+        glBindTexture(GL_TEXTURE_2D, texture);
 
         // VAO stores EBO too, so binding VAO also binds corresponding EBO
         glBindVertexArray(VAO); // not entirely necessary with only one VAO, but organized
@@ -198,7 +201,7 @@ int main() {
         glm::mat4 projection = glm::mat4(1.0f); // projection matrix
 
         // calculate model matrix
-        model = glm::rotate(model, currentFrame * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+        // model = glm::rotate(model, currentFrame * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
         int modelLoc = glGetUniformLocation(shaderProgram.ID, "model");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
