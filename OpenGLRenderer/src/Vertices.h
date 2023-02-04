@@ -6,8 +6,10 @@
 
 #include <glm.hpp>
 
+/*
+
 // normalized device coordinates (NDC) are transformed to screen-space coordinates via the viewport transform
-std::vector<tinyobj::real_t> squareVertices = {
+float squareVertices[] = {
     // positions          // colors           // texture coords
      0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   //1.0f, 1.0f, // top right
      0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   //1.0f, 0.0f, // bottom right
@@ -17,7 +19,7 @@ std::vector<tinyobj::real_t> squareVertices = {
     -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   //0.0f, 1.0f  // top left 
 };
 
-tinyobj::real_t cubeVertices[] = {
+float cubeVertices[] = {
     // positions          // colors          // texture coords
     -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,  //0.0f, 0.0f,
      0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 0.0f,  //1.0f, 0.0f,
@@ -80,3 +82,5 @@ unsigned int v_indices[] = {
     0, 1, 2, // first triangle
     1, 2, 3  // second triangle
 };
+
+*/

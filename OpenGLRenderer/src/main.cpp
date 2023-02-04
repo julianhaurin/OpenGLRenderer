@@ -1,5 +1,19 @@
 // OpenGl renderer (eventually) - 1/14/23 - Julian Haurin
-// Following learnopengl.com tutorial
+// Following: learnopengl.com tutorial ; vulkan-tutorial.com/Loading_models ; github.com/tinyobjloader/tinyobjloader
+
+// Notes:
+// 
+// fix model loading
+// separate model.h into model.cpp
+// setUpOpengl() - window pointer to local/stack data (if extracted to separate file)
+// how to extract callback functions when internal camera functionality is required
+// add texture funtionality
+// how do separate functions work that require OpenGL context - how to make secure?
+// fix texture loading function - stbi #define throwing errors - check data types reference/pointers - maybe problematic
+// add texture mtl file input in model class
+// fix naming convenctions (capitilization, in_, m_, etc.)
+// not sure how to handle #defines with stbi and tinyobj - throw a lot of errors in past
+// fix Model.h and Model.cpp - right now (2/4/23) all code is in .h to avoid linking erros (idk y)
 
 #include <iostream>
 #include <cstdint>
@@ -11,29 +25,27 @@
 #include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h> // image loading library
+#include <tiny_obj_loader.h>
 
 #include "Shader.h"
 #include "Camera.h"
 #include "Model.h"
+#include "Textures.h"
 #include "Vertices.h"
+#include "CallbackFunctions.h"
 
-// forward declarations
+
+// Forward Declarations //
+GLFWwindow* setupOpenGL();
 void processInput(GLFWwindow* window);
-void framebufferSizeCallback(GLFWwindow* window, int width, int height);
-void glfwErrorCallack(int code, const char* description);
+
+// these callbacks require access to a global Camera, so kept in main file (for now)
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void scrollCallback(GLFWwindow* window, double xOffset, double yOffset);
 
-// constants
+// Constants //
 const static uint32_t SCREEN_WIDTH = 800;
 const static uint32_t SCREEN_HEIGHT = 600;
-
-// file paths
-const char MODEL_PATH[] = "./assets/models/monkey.obj";
-const char VERTEX_SHADER_PATH[] = "./shaders/vertexShader.vs";
-const char FRAGMENT_SHADER_PATH[] = "./shaders/fragmentShader.fs";
 
 float static deltaTime = 0.0f; // Time between the current frame and the last frame
 float static lastFrame = 0.0f; // Time duration of last frame
@@ -43,8 +55,10 @@ glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f); // positive z-axis is through screen
 Camera camera = Camera(cameraPos, worldUp);
 
-// model data
-Model modelObj = Model();
+// file paths
+const char MODEL_PATH[] = "./assets/models/monkey.obj";
+const char VERTEX_SHADER_PATH[] = "./shaders/vertexShader.vs";
+const char FRAGMENT_SHADER_PATH[] = "./shaders/fragmentShader.fs";
 
 // initial mouse positions
 float lastMouseX = 400;
@@ -52,54 +66,17 @@ float lastMouseY = 300;
 
 bool firstMouseInput = true; // smooths initial mouse movement
 
-
 int main() {
 
     // SETUP // -----------------------------------------------------------------------------------------------------------------
-    GLFWwindow* window;
+    GLFWwindow* window = setupOpenGL();
 
-    // Initializes and configures the GLFW library and OpenGL context // --------------------------------------------------------
-    if (glfwInit() == GLFW_FALSE) {
-        std::cout << "ERROR: GLFW failed to initialize" << std::endl;
-        return -1;
-    }
-    std::cout << "GLFW successfully initialized" << std::endl;
-
-    // checks GLFW version
-    std::cout << "GLFW compile-time version: " << GLFW_VERSION_MAJOR << GLFW_VERSION_MINOR << GLFW_VERSION_REVISION << std::endl;
-    int major, minor, revision;
-    glfwGetVersion(&major, &minor, &revision);
-    std::cout << "GLFW run-time version: " << major << minor << revision << std::endl;
-
-    // GLFW window specifications 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);  //
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); // initializes opengl version as 3.3
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // program is run in core-profile 
-
-    // Creates a window and OpenGL context
-    window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "OpenGL 3D Renderer", NULL, NULL);   
-    if (window == NULL) {
-        std::cout << "ERROR: failed to create valid OpenGL window using GLFW" << std::endl;
-        glfwTerminate();
-        return -1;
-    }
-    std::cout << "GLFW window created" << std::endl;
-
-    // Makes the window context current
-    glfwMakeContextCurrent(window);
-    std::cout << "OpenGL context created and initialized" << std::endl;
-
-
-    // Initialize GLEW (after valid OpenGL context has been created) to load all OpenGl function pointers // --------------------
-    if (glewInit() != GLEW_OK) {
-        std::cout << "Error: glewInit() did not return GLEW_OK" << std::endl;
+    if (!window) {
+        std::cout << "ERROR: failed to setup OpenGL with setupOpenGL() " << std::endl;
     }
 
-    std::cout << "GLEW initialized" << std::endl;
-    std::cout << "OpenGL version: " << glGetString(GL_VERSION) << std::endl;
-    // --------------------------------------------------------------------------------------------------------------------------
      
-    // Callback functions, handled by GLFW, called whenever necessary //
+    // Callback functions, handled by GLFW, called whenever necessary //---------------------------------------------------------
 
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback); // recalculates viewport each time window is resized
     glfwSetErrorCallback(glfwErrorCallack); // handles GLFW errors 
@@ -109,36 +86,31 @@ int main() {
     // mouse settings
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // hides and captures cursor
 
-
     // Create and compile the shader program using the custom Shader class // ---------------------------------------------------
     Shader shaderProgram(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
+
+    // Rendering Data - Initializing and configuring VBO, EBO, and VAO // -------------------------------------------------------
+
+    // loading model data //
+    Model modelObj = Model();
     
-
-    // Initializing and configuring VBO, EBO, and VAO // ------------------------------------------------------------------------
-
-    // vertex attribute object (VAO)
-    unsigned int VAO;
+    unsigned int VAO; // vertex attribute object (VAO)
     glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO); // binds vertex array object
 
-    // vertex buffer object (VBO)
-    unsigned int VBO;
+    unsigned int VBO; // vertex buffer object (VBO)
     glGenBuffers(1, &VBO); // generates buffer id
 
-    // element buffer object (EBO)
-    unsigned int EBO;
+    unsigned int EBO; // element buffer object (EBO)
     glGenBuffers(1, &EBO);
 
-    // loads vertex data
-    modelObj.LoadModel(MODEL_PATH);
+    modelObj.LoadModel(MODEL_PATH); // loads vertex data
 
-    // configuring provided VAO, VBO, and EBO //
 
-    glBindVertexArray(VAO); // binds vertex array object
+    // FIX // -------------------------------------------------------------------------------------------------------------------
 
     tinyobj::real_t vertexDataArr[100000];
     tinyobj::index_t indexDataArr[10000];
-
-    // FIX // -----------------------------------------------------------
 
     for (int i = 0; i < modelObj.m_vertexData.size(); i++) {
         if (i >= 100000)
@@ -152,14 +124,10 @@ int main() {
         indexDataArr[j] = modelObj.m_indexData[j];
     }
 
-    // std::copy(modelObj.m_vertexData.begin(), modelObj.m_vertexData.end(), vertexDataArr);
+    // --------------------------------------------------------------------------------------------------------------------------
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO); // binds VBO to an array buffer (which is the VBO buffer type)
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertexDataArr), vertexDataArr, GL_STATIC_DRAW); // copies vertex data into buffer's memory
-
-    // configuring EBO
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexDataArr), indexDataArr, GL_STATIC_DRAW);
 
     // position attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
@@ -170,87 +138,25 @@ int main() {
     glEnableVertexAttribArray(1);
 
     // texture coord attribute
-    //glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    //glEnableVertexAttribArray(2);
+    // glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    // glEnableVertexAttribArray(2);
+
+    // configuring EBO
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexDataArr), indexDataArr, GL_STATIC_DRAW);
 
 
     // Textures // --------------------------------------------------------------------------------------------------------------
  
     // generating textures
-    unsigned int texture1, texture2;
+    unsigned int texture1;
 
-    // texture1
-    glGenTextures(1, &texture1);
-    glBindTexture(GL_TEXTURE_2D, texture1);
-
-    // setting texture wrapping parameters, uses s, t, r coordinate system
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); // 2D textures will repeat mirrored
-
-    // determines point (nearest-neighbor) filtering and bilinear filtering for textures
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // when scaling down, OpenGL will use bilinear filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // when scaling up, OpenGL will use bilinear filtering
-
-    // mipmap configuring
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    // load image from disk using stbi
-    stbi_set_flip_vertically_on_load(true);
-    int width, height, nrChannels;
-    unsigned char* textureData1 = stbi_load("./assets/textures/drunkCat.jpg", &width, &height, &nrChannels, 0);
-
-    // checks that the image loaded successfully
-    if (!textureData1) {
-        std::cout << "Error: texture1 image failed to load" << std::endl;
-
+    if (loadTexture(texture1) != 0) {
+        std::cout << "ERROR: failed to load texture data with loadTexture() " << std::endl;
     }
-    else {
-
-        std::cout << "Loaded texture data successfully" << std::endl;
-        // load data from stbi into OpenGL
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // pixel transfer configuring
-        // Allocates mutable storage for a mipmap level of the bound texture object
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData1); // pixel unpack operation
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-    }
-    // frees image memory
-    stbi_image_free(textureData1);
-
-    // texture2
-    glGenTextures(1, &texture2);
-    glBindTexture(GL_TEXTURE_2D, texture2);
-
-    // set the texture wrapping parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // set texture filtering parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    unsigned char* textureData2 = stbi_load("./assets/textures/awesomeFace.png", &width, &height, &nrChannels, 0);
-
-    // checks that the image loaded successfully
-    if (!textureData2) {
-        std::cout << "Error: texture2 image failed to load" << std::endl;
-
-    }
-    else {
-
-        std::cout << "Loaded texture data successfully" << std::endl;
-        // load data from stbi into OpenGL
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // cuz it was crashing before
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData2);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-    }
-    // frees image memory
-    stbi_image_free(textureData2);
 
     shaderProgram.use();
-    //glUniform1i(glGetUniformLocation(shaderProgram.ID, "texture1"), 0); // sets texture to 0
-    //shaderProgram.setInt("texture2", 1); // same thing, but with Shader class
+    shaderProgram.setInt("texture2", 1); // sets texture ID data(?) using Shader class
     
     glEnable(GL_DEPTH_TEST);
 
@@ -279,9 +185,6 @@ int main() {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture1);
 
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture2);
-
         // VAO stores EBO too, so binding VAO also binds corresponding EBO
         glBindVertexArray(VAO); // not entirely necessary with only one VAO, but organized
 
@@ -295,7 +198,7 @@ int main() {
         glm::mat4 projection = glm::mat4(1.0f); // projection matrix
 
         // calculate model matrix
-        // model = glm::rotate(model, currentFrame * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+        model = glm::rotate(model, currentFrame * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
         int modelLoc = glGetUniformLocation(shaderProgram.ID, "model");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
@@ -344,6 +247,53 @@ int main() {
     // --------------------------------------------------------------------------------------------------------------------------
 }
 
+// Sets up opengl - intializes GLFW window and OpenGl context, loads glew function pointers //
+GLFWwindow* setupOpenGL() {
+
+    // Initializes and configures the GLFW library and OpenGL context //
+
+    if (glfwInit() == GLFW_FALSE) {
+        std::cout << "ERROR: GLFW failed to initialize" << std::endl;
+        return NULL;
+    }
+    std::cout << "GLFW successfully initialized" << std::endl;
+
+    // checks GLFW version
+    std::cout << "GLFW compile-time version: " << GLFW_VERSION_MAJOR << GLFW_VERSION_MINOR << GLFW_VERSION_REVISION << std::endl;
+    int major, minor, revision;
+    glfwGetVersion(&major, &minor, &revision);
+    std::cout << "GLFW run-time version: " << major << minor << revision << std::endl;
+
+    // GLFW window specifications 
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);  //
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); // initializes opengl version as 3.3
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // program is run in core-profile 
+
+    // Creates a window and OpenGL context
+    GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "OpenGL 3D Renderer", NULL, NULL);
+    if (window == NULL) {
+        std::cout << "ERROR: failed to create valid OpenGL window using GLFW" << std::endl;
+        glfwTerminate();
+        return NULL;
+    }
+    std::cout << "GLFW window created" << std::endl;
+
+    // Makes the window context current
+    glfwMakeContextCurrent(window);
+    std::cout << "OpenGL context created and initialized" << std::endl;
+
+
+    // Initialize GLEW (after valid OpenGL context has been created) to load all OpenGl function pointers // --------------------
+    if (glewInit() != GLEW_OK) {
+        std::cout << "Error: glewInit() did not return GLEW_OK" << std::endl;
+    }
+
+    std::cout << "GLEW initialized" << std::endl;
+    std::cout << "OpenGL version: " << glGetString(GL_VERSION) << std::endl;
+    
+    return window; // on success
+}
+
 // process keyboard inputs using glfwGetKey
 void processInput(GLFWwindow* window) {
 
@@ -377,20 +327,6 @@ void processInput(GLFWwindow* window) {
 
 }
 
-// recalculates the viewport dimensions each time the OpenGl GLFW window is resized
-void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
-
-    // glViewPort is used to transform the 2D coordinates OpenGL processes to points on your screen (behind the scene)
-    glViewport(0, 0, width, height);
-
-}
-
-// handles GLFW errors using glfwSetErrorCallback
-void glfwErrorCallack(int code, const char* description) {
-
-    std::cout << "GLFW error reported: " << description << std::endl;
-
-}
 
 // handles mouse movement for calculaing Euler angles
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
