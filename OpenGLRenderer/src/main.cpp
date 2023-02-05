@@ -1,7 +1,7 @@
 // OpenGl renderer (eventually) - 1/14/23 - Julian Haurin
 // Following: learnopengl.com tutorial ; vulkan-tutorial.com/Loading_models ; github.com/tinyobjloader/tinyobjloader
 
-// Notes:
+// Notes: -----------------------------------------------------------------------------------------------------------------------
 // 
 // fix model loading
 // separate model.h into model.cpp
@@ -14,6 +14,8 @@
 // fix naming convenctions (capitilization, in_, m_, etc.)
 // not sure how to handle #defines with stbi and tinyobj - throw a lot of errors in past
 // fix Model.h and Model.cpp - right now (2/4/23) all code is in .h to avoid linking erros (idk y)
+//
+// ------------------------------------------------------------------------------------------------------------------------------
 
 #include <iostream>
 #include <cstdint>
@@ -59,8 +61,8 @@ Camera camera = Camera(cameraPos, worldUp);
 const char VERTEX_SHADER_PATH[] = "./shaders/vertexShader.vs";
 const char FRAGMENT_SHADER_PATH[] = "./shaders/fragmentShader.fs";
 
-const char MODEL_PATH[] = "./assets/models/capybara7.obj";
-const char TEXTURE_PATH[] = "./assets/textures/drunkCat.jpg.obj";
+const char MODEL_PATH[] = "./assets/models/vikingRoom.obj";
+const char TEXTURE_PATH[] = "./assets/textures/vikingRoom.png";
 // const char TEXTURE_PATH[] = "./assets/textures/capybara7.mtl";
 
 // initial mouse positions
@@ -180,7 +182,7 @@ int main() {
 
         // Render // ------------------------------------------------------------------------------------------------------------
 
-        glClearColor(0.1f, 0.02f, 0.05f, 1.0f); // background color
+        glClearColor(0.3f, 0.06f, 0.05f, 1.0f); // background color
         glClear(GL_COLOR_BUFFER_BIT); // clears window
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clears z-buffer
 
@@ -201,7 +203,9 @@ int main() {
         glm::mat4 projection = glm::mat4(1.0f); // projection matrix
 
         // calculate model matrix
-        // model = glm::rotate(model, currentFrame * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        // model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         int modelLoc = glGetUniformLocation(shaderProgram.ID, "model");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
