@@ -11,7 +11,7 @@ Provides basic camera functionality (basic movement, looking around with mouse, 
 
 Working on implementing basic lighting (2/4/23)
 
-Learning resources include:
+Learning resources include: 
 - learnopengl.com tutorial
 - vulkan-tutorial.com
 - github.com/tinyobjloader/tinyobjloader
