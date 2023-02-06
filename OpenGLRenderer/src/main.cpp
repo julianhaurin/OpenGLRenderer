@@ -46,11 +46,9 @@
 #include "Functions.h"
 
 
-// Forward Declarations //
-GLFWwindow* setupOpenGL(const unsigned int in_screenWidth, const unsigned int in_screenHeight);
-void processInput(GLFWwindow* window);
+// Forward Declarations - require camera class so kept in main file (for now) //
 
-// these callbacks require access to a global Camera, so kept in main file (for now)
+void processInput(GLFWwindow* window);
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void scrollCallback(GLFWwindow* window, double xOffset, double yOffset);
 
@@ -81,28 +79,26 @@ bool firstMouseInput = true; // smooths initial mouse movement
 
 int main() {
 
-    // SETUP // -----------------------------------------------------------------------------------------------------------------
+    // Setup // -----------------------------------------------------------------------------------------------------------------
     GLFWwindow* window = setupOpenGL(SCREEN_WIDTH, SCREEN_HEIGHT);
 
     if (!window) {
         std::cout << "[J] ERROR: failed to setup OpenGL with setupOpenGL() " << std::endl;
     }
 
-    // Callback functions, handled by GLFW, called whenever necessary //---------------------------------------------------------
+    // Callback functions, handled by GLFW, called whenever necessary // --------------------------------------------------------
 
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback); // recalculates viewport each time window is resized
     glfwSetErrorCallback(glfwErrorCallack); // handles GLFW errors 
     glfwSetCursorPosCallback(window, mouseCallback);
     glfwSetScrollCallback(window, scrollCallback);
 
-    // mouse settings
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // hides and captures cursor
 
     // Create and compile the shader program using the custom Shader class // ---------------------------------------------------
     Shader shaderProgram(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
 
     // Rendering Data - Initializing and configuring VBO, EBO, and VAO // -------------------------------------------------------
-
     Model vikingRoom = Model();
 
     vikingRoom.LoadModel(MODEL_PATH); // loads vertex data
@@ -111,7 +107,7 @@ int main() {
     vikingRoom.ConfigureTexture(); // configures texture data
     vikingRoom.BindModel(); // binds data
 
-    // Textures // --------------------------------------------------------------------------------------------------------------
+    // --------------------------------------------------------------------------------------------------------------------------
 
     shaderProgram.use();
     shaderProgram.setInt("texture", 0); // sets texture ID data(?) using Shader class
