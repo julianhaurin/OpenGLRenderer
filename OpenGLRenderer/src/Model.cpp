@@ -20,14 +20,14 @@ void Model::LoadModel(const char* in_filePath) {
 	// reads 
 	if (!reader.ParseFromFile(in_filePath, reader_config)) {
 		if (!reader.Error().empty()) {
-			std::cerr << "Error loading obj file: " << reader.Error();
+			std::cerr << "[J] ERROR: failed to load obj file: " << reader.Error();
 		}
 		exit(1);
 	}
 
 	// handles warning 
 	if (!reader.Warning().empty()) {
-		std::cout << "Warning from tinyobjloader: " << reader.Warning();
+		std::cout << "[J] WARNING: from tinyobjloader: " << reader.Warning();
 	}
 
 	// loads data into attrib

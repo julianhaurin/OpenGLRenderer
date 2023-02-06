@@ -14,6 +14,11 @@
 // fix naming convenctions (capitilization, in_, m_, etc.)
 // not sure how to handle #defines with stbi and tinyobj - throw a lot of errors in past
 // fix Model.h and Model.cpp - right now (2/4/23) all code is in .h to avoid linking erros (idk y)
+// personal console messages should start with [J] and erros should start with [J] ERROR: 
+// weird error with tinyobjloader loading textures - keeps saying failed to load from "path" but path always has "\" at the end
+// for now, textures (.mtl) have to stay in same folder as model bc of above error
+// mtl file name is in obj file, had to change that, mightve fixed bug
+// fix ebo so i can use gldrawelements (looks weird rn 2/6/23)
 //
 // ------------------------------------------------------------------------------------------------------------------------------
 
@@ -62,7 +67,7 @@ const char VERTEX_SHADER_PATH[] = "./shaders/vertexShader.vs";
 const char FRAGMENT_SHADER_PATH[] = "./shaders/fragmentShader.fs";
 
 const char MODEL_PATH[] = "./assets/models/vikingRoom.obj";
-const char TEXTURE_PATH[] = "./assets/textures/vikingRoom.png";
+const char TEXTURE_PATH[] = "./assets/textures/vikingRoom.mtl";
 // const char TEXTURE_PATH[] = "./assets/textures/capybara7.mtl";
 
 // initial mouse positions
@@ -111,28 +116,10 @@ int main() {
 
     modelObj.LoadModel(MODEL_PATH); // loads vertex data
 
-
-    // FIX // -------------------------------------------------------------------------------------------------------------------
-
-    tinyobj::real_t vertexDataArr[100000];
-    tinyobj::index_t indexDataArr[10000];
-
-    for (int i = 0; i < modelObj.m_vertexData.size(); i++) {
-        if (i >= 100000)
-            break;
-        vertexDataArr[i] = modelObj.m_vertexData[i];
-    }
-
-    for (int j = 0; j < modelObj.m_indexData.size(); j++) {
-        if (j >= 10000)
-            break;
-        indexDataArr[j] = modelObj.m_indexData[j];
-    }
-
     // --------------------------------------------------------------------------------------------------------------------------
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO); // binds VBO to an array buffer (which is the VBO buffer type)
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertexDataArr), vertexDataArr, GL_STATIC_DRAW); // copies vertex data into buffer's memory
+    glBufferData(GL_ARRAY_BUFFER, modelObj.m_vertexData.size() * sizeof(float), &modelObj.m_vertexData[0], GL_STATIC_DRAW); // copies vertex data into buffer's memory
 
     // position attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
@@ -148,7 +135,7 @@ int main() {
 
     // configuring EBO
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexDataArr), indexDataArr, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, modelObj.m_indexData.size() * sizeof(float), &modelObj.m_indexData[0], GL_STATIC_DRAW);
 
 
     // Textures // --------------------------------------------------------------------------------------------------------------
@@ -157,7 +144,7 @@ int main() {
     unsigned int texture;
 
     if (loadTexture(texture, TEXTURE_PATH) != 0) {
-        std::cout << "ERROR: failed to load texture data with loadTexture() " << std::endl;
+        std::cout << "[J] ERROR: failed to load texture data with loadTexture() " << std::endl;
     }
 
     shaderProgram.use();
@@ -224,8 +211,8 @@ int main() {
         transformation = glm::rotate(transformation, currentFrame, glm::vec3(0.0f, 0.0f, 1.0f));
 
         // Initialize rendering pipeline // -------------------------------------------------------------------------------------
-        //glDrawElements(GL_TRIANGLES, modelObj.m_numOfVertices, GL_UNSIGNED_INT, 0);
-        glDrawArrays(GL_TRIANGLES, 0, modelObj.m_numOfVertices);
+        // glDrawElements(GL_TRIANGLES, modelObj.m_vertexData.size(), GL_UNSIGNED_INT, 0);
+        glDrawArrays(GL_TRIANGLES, 0, modelObj.m_vertexData.size());
 
         // Cleanup // -----------------------------------------------------------------------------------------------------------
 
