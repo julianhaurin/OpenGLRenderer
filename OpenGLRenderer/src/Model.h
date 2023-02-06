@@ -10,10 +10,8 @@
 #include <GL/glew.h>
 
 #include <tiny_obj_loader.h>
-// #define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
 
-#include "Vertices.h"
+#include <stb_image.h>
 
 
 class Model
@@ -22,11 +20,11 @@ class Model
 public:
 
 	// should I be zeroing variables?
-	uint32_t m_VAO; // Vertex Array Object (VAO)
-	uint32_t m_VBO; // Vertex Buffer Object (VBO)
-	uint32_t m_EBO; // Element Buffer Object (EBO)
+	uint32_t m_VAO = 0; // Vertex Array Object (VAO)
+	uint32_t m_VBO = 0; // Vertex Buffer Object (VBO)
+	uint32_t m_EBO = 0; // Element Buffer Object (EBO)
 
-	uint32_t m_texture; // texture ID
+	uint32_t m_texture = 0; // texture ID
 
 	std::vector<tinyobj::real_t> m_vertexData = {};
 	std::vector<tinyobj::index_t> m_indexData = {};

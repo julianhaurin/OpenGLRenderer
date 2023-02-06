@@ -22,6 +22,9 @@
 // return success int in model methods, not void?
 // #define STB_IMAGE_IMPLEMENTATION being weird with linker too - gotta figure this shit out
 // use cstdint everywhere?
+// check if texture binding and other shit with shaders is working
+// try multiple models!
+// check warnings - lots from stbi and tinyobjloader too?
 //
 // ------------------------------------------------------------------------------------------------------------------------------
 
@@ -40,9 +43,6 @@
 #include "Shader.h"
 #include "Camera.h"
 #include "Model.h"
-#include "Textures.h"
-#include "Vertices.h"
-#include "CallbackFunctions.h"
 #include "Functions.h"
 
 
@@ -152,21 +152,14 @@ int main() {
         // calculate model matrix
         model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // z
         model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // y
-        // model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // x
-        // int modelLoc = glGetUniformLocation(shaderProgram.ID, "model");
-        // glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
         shaderProgram.setMat4("model", model);
 
         // calculate view matrix
         view = camera.calculateViewMatrix();
-        // int viewLoc = glGetUniformLocation(shaderProgram.ID, "view");
-        // glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         shaderProgram.setMat4("view", view);
 
         // calculate projection matrix
         projection = glm::perspective(glm::radians(camera.cameraZoom), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
-        // int projlLoc = glGetUniformLocation(shaderProgram.ID, "projection");
-        // glUniformMatrix4fv(projlLoc, 1, GL_FALSE, glm::value_ptr(projection));
         shaderProgram.setMat4("projection", projection);
 
         // calculate transformation matrix
@@ -178,7 +171,6 @@ int main() {
         vikingRoom.BindModel();
         // glDrawElements(GL_TRIANGLES, modelObj.m_vertexData.size(), GL_UNSIGNED_INT, 0);
         glDrawArrays(GL_TRIANGLES, 0, vikingRoom.m_vertexData.size());
-
 
         // Cleanup // -----------------------------------------------------------------------------------------------------------
 

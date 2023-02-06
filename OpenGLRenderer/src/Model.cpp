@@ -1,6 +1,7 @@
 // Model class - Julian Haurin - 2/4/23
 
 // constructor
+#define STB_IMAGE_IMPLEMENTATION
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "Model.h"
 
