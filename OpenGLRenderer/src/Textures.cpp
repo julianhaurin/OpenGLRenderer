@@ -31,13 +31,13 @@ int loadTexture(unsigned int& in_texture, const char* in_filePath) {
 
     // checks that the image loaded successfully
     if (!textureData) {
-        std::cout << "Error: texture1 image failed to load" << std::endl;
+        std::cout << "[J] ERROR: texture1 image failed to load" << std::endl;
         return -1;
 
     }
     else {
 
-        std::cout << "Loaded texture data successfully" << std::endl;
+        std::cout << "[J] Loaded texture data successfully" << std::endl;
         // load data from stbi into OpenGL
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // pixel transfer configuring
         // Allocates mutable storage for a mipmap level of the bound texture object

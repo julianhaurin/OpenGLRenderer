@@ -3,8 +3,6 @@
 
 // Notes: -----------------------------------------------------------------------------------------------------------------------
 // 
-// fix model loading
-// separate model.h into model.cpp
 // setUpOpengl() - window pointer to local/stack data (if extracted to separate file)
 // how to extract callback functions when internal camera functionality is required
 // add texture funtionality
@@ -13,12 +11,17 @@
 // add texture mtl file input in model class
 // fix naming convenctions (capitilization, in_, m_, etc.)
 // not sure how to handle #defines with stbi and tinyobj - throw a lot of errors in past
-// fix Model.h and Model.cpp - right now (2/4/23) all code is in .h to avoid linking erros (idk y)
 // personal console messages should start with [J] and erros should start with [J] ERROR: 
 // weird error with tinyobjloader loading textures - keeps saying failed to load from "path" but path always has "\" at the end
 // for now, textures (.mtl) have to stay in same folder as model bc of above error
 // mtl file name is in obj file, had to change that, mightve fixed bug
 // fix ebo so i can use gldrawelements (looks weird rn 2/6/23)
+// think more about ood and model class - maybe add VBO VAO EBO, and texture info too
+// fix EBO vs index shit - glDrawElements not working correctly
+// add more flexibility in model ConfigureModel - stride, vertex type, etc. also in texture loading functions
+// return success int in model methods, not void?
+// #define STB_IMAGE_IMPLEMENTATION being weird with linker too - gotta figure this shit out
+// use cstdint everywhere?
 //
 // ------------------------------------------------------------------------------------------------------------------------------
 
@@ -40,10 +43,11 @@
 #include "Textures.h"
 #include "Vertices.h"
 #include "CallbackFunctions.h"
+#include "Functions.h"
 
 
 // Forward Declarations //
-GLFWwindow* setupOpenGL();
+GLFWwindow* setupOpenGL(const unsigned int in_screenWidth, const unsigned int in_screenHeight);
 void processInput(GLFWwindow* window);
 
 // these callbacks require access to a global Camera, so kept in main file (for now)
@@ -68,7 +72,6 @@ const char FRAGMENT_SHADER_PATH[] = "./shaders/fragmentShader.fs";
 
 const char MODEL_PATH[] = "./assets/models/vikingRoom.obj";
 const char TEXTURE_PATH[] = "./assets/textures/vikingRoom.mtl";
-// const char TEXTURE_PATH[] = "./assets/textures/capybara7.mtl";
 
 // initial mouse positions
 float lastMouseX = 400;
@@ -79,13 +82,12 @@ bool firstMouseInput = true; // smooths initial mouse movement
 int main() {
 
     // SETUP // -----------------------------------------------------------------------------------------------------------------
-    GLFWwindow* window = setupOpenGL();
+    GLFWwindow* window = setupOpenGL(SCREEN_WIDTH, SCREEN_HEIGHT);
 
     if (!window) {
-        std::cout << "ERROR: failed to setup OpenGL with setupOpenGL() " << std::endl;
+        std::cout << "[J] ERROR: failed to setup OpenGL with setupOpenGL() " << std::endl;
     }
 
-     
     // Callback functions, handled by GLFW, called whenever necessary //---------------------------------------------------------
 
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback); // recalculates viewport each time window is resized
@@ -101,60 +103,25 @@ int main() {
 
     // Rendering Data - Initializing and configuring VBO, EBO, and VAO // -------------------------------------------------------
 
-    // loading model data //
-    Model modelObj = Model();
-    
-    unsigned int VAO; // vertex attribute object (VAO)
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO); // binds vertex array object
+    Model vikingRoom = Model();
 
-    unsigned int VBO; // vertex buffer object (VBO)
-    glGenBuffers(1, &VBO); // generates buffer id
-
-    unsigned int EBO; // element buffer object (EBO)
-    glGenBuffers(1, &EBO);
-
-    modelObj.LoadModel(MODEL_PATH); // loads vertex data
-
-    // --------------------------------------------------------------------------------------------------------------------------
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO); // binds VBO to an array buffer (which is the VBO buffer type)
-    glBufferData(GL_ARRAY_BUFFER, modelObj.m_vertexData.size() * sizeof(float), &modelObj.m_vertexData[0], GL_STATIC_DRAW); // copies vertex data into buffer's memory
-
-    // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    // color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    // texture coord attribute
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-
-    // configuring EBO
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, modelObj.m_indexData.size() * sizeof(float), &modelObj.m_indexData[0], GL_STATIC_DRAW);
-
+    vikingRoom.LoadModel(MODEL_PATH); // loads vertex data
+    vikingRoom.ConfigureModel(); // configures vertex data
+    vikingRoom.LoadTexture(TEXTURE_PATH); // loads texture data
+    vikingRoom.ConfigureTexture(); // configures texture data
+    vikingRoom.BindModel(); // binds data
 
     // Textures // --------------------------------------------------------------------------------------------------------------
- 
-    // generating textures
-    unsigned int texture;
-
-    if (loadTexture(texture, TEXTURE_PATH) != 0) {
-        std::cout << "[J] ERROR: failed to load texture data with loadTexture() " << std::endl;
-    }
 
     shaderProgram.use();
     shaderProgram.setInt("texture", 0); // sets texture ID data(?) using Shader class
-    
+
     glEnable(GL_DEPTH_TEST);
 
     // Render Loop // -----------------------------------------------------------------------------------------------------------
 
     float count = 0;
+    std::cout << "[J] Starting render loop... " << std::endl;
 
     // loops until the user closes the window
     while (!glfwWindowShouldClose(window)) { // a render loop is also called a frame
@@ -173,12 +140,9 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT); // clears window
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clears z-buffer
 
-        // bind textures on corresponding texture units
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture);
-
-        // VAO stores EBO too, so binding VAO also binds corresponding EBO
-        glBindVertexArray(VAO); // not entirely necessary with only one VAO, but organized
+        //// bind textures on corresponding texture units
+        //glActiveTexture(GL_TEXTURE0);
+        //glBindTexture(GL_TEXTURE_2D, texture);
 
         shaderProgram.use(); // activates program object
 
@@ -190,29 +154,35 @@ int main() {
         glm::mat4 projection = glm::mat4(1.0f); // projection matrix
 
         // calculate model matrix
-        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        // model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        int modelLoc = glGetUniformLocation(shaderProgram.ID, "model");
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // z
+        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // y
+        // model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // x
+        // int modelLoc = glGetUniformLocation(shaderProgram.ID, "model");
+        // glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        shaderProgram.setMat4("model", model);
 
         // calculate view matrix
         view = camera.calculateViewMatrix();
-        int viewLoc = glGetUniformLocation(shaderProgram.ID, "view");
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        // int viewLoc = glGetUniformLocation(shaderProgram.ID, "view");
+        // glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        shaderProgram.setMat4("view", view);
 
         // calculate projection matrix
         projection = glm::perspective(glm::radians(camera.cameraZoom), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
-        int projlLoc = glGetUniformLocation(shaderProgram.ID, "projection");
-        glUniformMatrix4fv(projlLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        // int projlLoc = glGetUniformLocation(shaderProgram.ID, "projection");
+        // glUniformMatrix4fv(projlLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        shaderProgram.setMat4("projection", projection);
 
         // calculate transformation matrix
         glm::mat4 transformation = glm::mat4(1.0f);
         transformation = glm::rotate(transformation, currentFrame, glm::vec3(0.0f, 0.0f, 1.0f));
 
         // Initialize rendering pipeline // -------------------------------------------------------------------------------------
+
+        vikingRoom.BindModel();
         // glDrawElements(GL_TRIANGLES, modelObj.m_vertexData.size(), GL_UNSIGNED_INT, 0);
-        glDrawArrays(GL_TRIANGLES, 0, modelObj.m_vertexData.size());
+        glDrawArrays(GL_TRIANGLES, 0, vikingRoom.m_vertexData.size());
+
 
         // Cleanup // -----------------------------------------------------------------------------------------------------------
 
@@ -225,67 +195,17 @@ int main() {
 
     }
 
+    std::cout << "Frame count: " << count << std::endl;
+
     // CLEANUP // ---------------------------------------------------------------------------------------------------------------
 
-    // deallocates resources once the program has completed
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
-
-    std::cout << "Frame count: " << count << std::endl;
+    vikingRoom.DeleteModelData();
 
     glfwDestroyWindow(window);
     glfwTerminate(); // cleans up, restores any global settings changes
     return 0;
 
     // --------------------------------------------------------------------------------------------------------------------------
-}
-
-// Sets up opengl - intializes GLFW window and OpenGl context, loads glew function pointers //
-GLFWwindow* setupOpenGL() {
-
-    // Initializes and configures the GLFW library and OpenGL context //
-
-    if (glfwInit() == GLFW_FALSE) {
-        std::cout << "ERROR: GLFW failed to initialize" << std::endl;
-        return NULL;
-    }
-    std::cout << "GLFW successfully initialized" << std::endl;
-
-    // checks GLFW version
-    std::cout << "GLFW compile-time version: " << GLFW_VERSION_MAJOR << GLFW_VERSION_MINOR << GLFW_VERSION_REVISION << std::endl;
-    int major, minor, revision;
-    glfwGetVersion(&major, &minor, &revision);
-    std::cout << "GLFW run-time version: " << major << minor << revision << std::endl;
-
-    // GLFW window specifications 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);  //
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); // initializes opengl version as 3.3
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // program is run in core-profile 
-
-    // Creates a window and OpenGL context
-    GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "OpenGL 3D Renderer", NULL, NULL);
-    if (window == NULL) {
-        std::cout << "ERROR: failed to create valid OpenGL window using GLFW" << std::endl;
-        glfwTerminate();
-        return NULL;
-    }
-    std::cout << "GLFW window created" << std::endl;
-
-    // Makes the window context current
-    glfwMakeContextCurrent(window);
-    std::cout << "OpenGL context created and initialized" << std::endl;
-
-
-    // Initialize GLEW (after valid OpenGL context has been created) to load all OpenGl function pointers // --------------------
-    if (glewInit() != GLEW_OK) {
-        std::cout << "Error: glewInit() did not return GLEW_OK" << std::endl;
-    }
-
-    std::cout << "GLEW initialized" << std::endl;
-    std::cout << "OpenGL version: " << glGetString(GL_VERSION) << std::endl;
-    
-    return window; // on success
 }
 
 // process keyboard inputs using glfwGetKey

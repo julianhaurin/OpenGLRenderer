@@ -5,10 +5,13 @@
 
 #include <iostream>
 #include <vector>
+#include <cstdint>
 
 #include <GL/glew.h>
 
 #include <tiny_obj_loader.h>
+// #define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 #include "Vertices.h"
 
@@ -18,19 +21,36 @@ class Model
 
 public:
 
+	// should I be zeroing variables?
+	uint32_t m_VAO; // Vertex Array Object (VAO)
+	uint32_t m_VBO; // Vertex Buffer Object (VBO)
+	uint32_t m_EBO; // Element Buffer Object (EBO)
+
+	uint32_t m_texture; // texture ID
+
 	std::vector<tinyobj::real_t> m_vertexData = {};
 	std::vector<tinyobj::index_t> m_indexData = {};
 
-	unsigned int m_numOfVertices = 0;
-
-	// not member intializer list - prolly fine
 	Model();
 
 	// loads a mesh given a file path into the proper Model class members 
 	void LoadModel(const char* in_filePath);
 
-	// loads a mesh given a file path and the proper VAO, VBO and EBO 
-	// unsigned int LoadModel_Deprecated(unsigned int& in_VAO, unsigned int& in_VBO, unsigned int& in_EBO, const char* in_filePath);
+	// (after loading mesh data) configures VAO, VBO, and EBO
+	void ConfigureModel();
+
+	// loads texture data into model
+	void LoadTexture(const char* in_texturePath);
+
+	// configures texture settings
+	void ConfigureTexture();
+
+	// binds all necessary data in model
+	void BindModel();
+
+	// deallocates model data once the object is no longer in use
+	void DeleteModelData();
+
 
 private:
 

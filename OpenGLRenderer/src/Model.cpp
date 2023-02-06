@@ -47,19 +47,15 @@ void Model::LoadModel(const char* in_filePath) {
 			// loops over vertices
 			for (size_t vertex = 0; vertex < faceVertices; vertex++) {
 
-				m_numOfVertices++;
-
 				tinyobj::index_t index = shapes[shape].mesh.indices[index_offset + vertex];
 				m_indexData.push_back(index);
 
 				// vertex position
-				// std::cout << "Loading position data... " << std::endl;
-				m_vertexData.push_back(attrib.vertices[3 * index.vertex_index]); // + 0
-				m_vertexData.push_back(attrib.vertices[3 * index.vertex_index + 1]);
-				m_vertexData.push_back(attrib.vertices[3 * index.vertex_index + 2]);
+				m_vertexData.push_back(attrib.vertices[3 * (float)index.vertex_index]); // + 0
+				m_vertexData.push_back(attrib.vertices[3 * (float)index.vertex_index + 1]);
+				m_vertexData.push_back(attrib.vertices[3 * (float)index.vertex_index + 2]);
 
 				// vertex colors
-				// std::cout << "Loading color data... " << std::endl;
 				m_vertexData.push_back(0.1f);
 				m_vertexData.push_back(0.2f);
 				m_vertexData.push_back(0.4f);
@@ -78,130 +74,121 @@ void Model::LoadModel(const char* in_filePath) {
 
 				// texture coordinates
 				if (index.texcoord_index >= 0) {
-					// std::cout << "Loading texture data... " << std::endl;
-					m_vertexData.push_back(attrib.texcoords[2 * index.texcoord_index + 0]);
-					m_vertexData.push_back(attrib.texcoords[2 * index.texcoord_index + 1]);
+					m_vertexData.push_back(attrib.texcoords[2 * (float)index.texcoord_index + 0]);
+					m_vertexData.push_back(attrib.texcoords[2 * (float)index.texcoord_index + 1]);
 				}
 
 			}
 
 			index_offset += faceVertices;
-			shapes[shape].mesh.material_ids[face];
+			// shapes[shape].mesh.material_ids[face]; (?)
 
 		}
 
 	}
 
-	// prints data
-	/*for (int i = 0; i < m_vertexData.size(); i++) {
-		std::cout << m_vertexData[i] << " ";
-	}*/
-
-	// in_vertexData = m_vertexData;
-
-	std::cout << "Loaded OBJ " << std::endl;
+	std::cout << "[J] Loaded OBJ " << std::endl;
 
 	return;
 
 }
 
-// DEPRECATED - ERRORS // -------------------------------------------------------------------------------------------------------
+// (after loading mesh data) configures VAO, VBO, and EBO
+void Model::ConfigureModel() {
 
-/* 
-// loads a mesh given a file path and the proper VAO, VBO and EBO 
-unsigned int Model::LoadModel_Deprecated(unsigned int& in_VAO, unsigned int& in_VBO, unsigned int& in_EBO, const char* in_filePath) {
+	glGenVertexArrays(1, &m_VAO);
+	glBindVertexArray(m_VAO);
 
-	// returns the number of vertices, necessary for glDrawElements()
-	unsigned int out_numOfVertices = 0;
+	glGenBuffers(1, &m_VBO);
+	glGenBuffers(1, &m_EBO);
 
-	// vertex data filled with data from obj file
-	std::vector<float> vertices;
-	std::vector<float> indices;
-
-	// holds obj positions, normals, and texture coordinates in attrib.vertices, attrib.normals, and attrib.texcoords vectors
-	tinyobj::attrib_t attrib;
-
-	std::vector<tinyobj::shape_t> shapes; // contains all separate objects and their faces
-	std::vector<tinyobj::material_t> materials;
-
-	std::string warn, err;
-
-	// loads model into tinyobjloader data structures
-	bool success = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, in_filePath);
-
-	// warning and error handling
-	if (!warn.empty()) {
-		std::cout << "TinyObjLoader warning: " << warn << std::endl;
-	}
-
-	if (!err.empty()) {
-		std::cerr << "TinyObjLoader error: " << warn << std::endl;
-	}
-
-	if (!success) {
-		std::cout << "ERROR: tinyobjloader failed to load obj file with LoadObj() " << std::endl;
-		return 0;
-	}
-
-	// combines all of the faces in the obj file into a single model by iterating through each shape
-	for (const auto& shape : shapes) {
-
-		// triangulation feature enabled by default, three vertices per face
-		for (const auto& index : shape.mesh.indices) {
-
-			// fill vertices vector with data //
-
-			// vertex position, assuming unique vertices for now
-			vertices.push_back(attrib.vertices[3 * index.vertex_index + 0]);
-			vertices.push_back(attrib.vertices[3 * index.vertex_index + 1]);
-			vertices.push_back(attrib.vertices[3 * index.vertex_index + 2]);
-
-			// vertex color
-			vertices.push_back(0.5f);
-			vertices.push_back(0.0f);
-			vertices.push_back(0.0f);
-
-			// texture coordinates
-			//vertices.push_back(attrib.texcoords[2 * index.texcoord_index + 0]);
-			//vertices.push_back(attrib.texcoords[2 * index.texcoord_index + 1]);
-
-			indices.push_back(indices.size());
-
-			out_numOfVertices++;
-
-		}
-
-	}
-
-	// configuring provided VAO, VBO, and EBO //
-
-	glBindVertexArray(in_VAO); // binds vertex array object
-
-	glBindBuffer(GL_ARRAY_BUFFER, in_VBO); // binds VBO to an array buffer (which is the VBO buffer type)
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices[0], GL_STATIC_DRAW); // copies vertex data into buffer's memory
-
-	// configuring EBO
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, in_EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, m_VBO); // binds VBO to an array buffer (which is the VBO buffer type)
+	glBufferData(GL_ARRAY_BUFFER, m_vertexData.size() * sizeof(float), &m_vertexData[0], GL_STATIC_DRAW); // copies vertex data into buffer's memory
 
 	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
 	// color attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
 	// texture coord attribute
-	//glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-	//glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
-	std::cout << "DEPRECATED FUNCTION: Loaded OBJ and configured VAO, VBO, and EBO values" << std::endl;
-
-	return out_numOfVertices;
+	// configuring EBO
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indexData.size() * sizeof(float), &m_indexData[0], GL_STATIC_DRAW);
 
 }
 
-*/
+// loads texture data into model
+void Model::LoadTexture(const char* in_texturePath) {
 
-// ------------------------------------------------------------------------------------------------------------------------------
+	glGenTextures(1, &m_texture);
+	glBindTexture(GL_TEXTURE_2D, m_texture);
+
+	// load image from disk using stbi
+	stbi_set_flip_vertically_on_load(true);
+	int width, height, nrChannels;
+	unsigned char* textureData = stbi_load(in_texturePath, &width, &height, &nrChannels, 0);
+
+	// checks that the image loaded successfully
+	if (!textureData) {
+		std::cout << "[J] ERROR: texture1 image failed to load" << std::endl;
+		return;
+
+	}
+	else {
+
+		std::cout << "[J] Loaded texture data successfully" << std::endl;
+		// load data from stbi into OpenGL
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // pixel transfer configuring
+		// Allocates mutable storage for a mipmap level of the bound texture object
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData); // pixel unpack operation
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+	}
+	// frees image memory
+	stbi_image_free(textureData);
+
+}
+
+// configures texture settings
+void Model::ConfigureTexture() {
+
+	// setting texture wrapping parameters, uses s, t, r coordinate system
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); // 2D textures will repeat mirrored
+
+	// determines point (nearest-neighbor) filtering and bilinear filtering for textures
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // when scaling down, OpenGL will use bilinear filtering
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // when scaling up, OpenGL will use bilinear filtering
+
+	// mipmap configuring
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+}
+
+// binds all necessary data in model
+void Model::BindModel() {
+
+	glBindVertexArray(m_VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_texture);
+
+}
+
+// deallocates model data once the object is no longer in use
+void Model::DeleteModelData() {
+
+	glDeleteVertexArrays(1, &m_VAO);
+	glDeleteBuffers(1, &m_VBO);
+	glDeleteBuffers(1, &m_EBO);
+
+}
