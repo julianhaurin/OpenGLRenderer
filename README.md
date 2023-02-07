@@ -16,4 +16,4 @@ Learning resources include:
 - vulkan-tutorial.com
 - github.com/tinyobjloader/tinyobjloader
 
-Updated 2/4/2023 
+Updated 2/6/2023 
